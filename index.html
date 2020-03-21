@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js"></script>
+    <title>Dashboard</title>
+
+    <style>
+      /* Dropdown Button */
+      .drop-container {
+      }
+      .dropbtn {
+        background-color: #787878;
+        color: white;
+        padding: 10px;
+        font-weight: bold;
+        font-size: 10px;
+        border: none;
+        cursor: pointer;
+        min-width: 120px;
+        text-anchor: middle;
+      }
+
+      /* The container <div> - needed to position the dropdown content */
+      .dropdown-option {
+        margin: auto;
+        position: relative;
+        text-anchor: middle;
+      }
+
+      /* Dropdown Content (Hidden by Default) */
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f1f1f1;
+        min-width: 120px;
+        z-index: 1;
+        max-height: 530px;
+        overflow: auto;
+        text-anchor: middle;
+      }
+
+      /* Links inside the dropdown */
+      .dropdown-content a {
+        color: #404e4d;
+        font-size: 10px;
+        font-weight: bold;
+        padding: 8px 0px;
+        text-decoration: none;
+        display: block;
+        text-anchor: middle;
+        text-align: center;
+      }
+
+      /* Change color of dropdown links on hover */
+      .dropdown-content a:hover {
+        background-color: #ddd;
+      }
+
+      /* Show the dropdown menu on hover */
+      .dropdown-option:hover .dropdown-content {
+        display: block;
+      }
+
+      /* Change the background color of the dropdown button when the dropdown content is shown */
+      .dropdown-option:hover .dropbtn {
+        background-color: #132a54;
+      }
+
+      .president-block {
+        cursor: pointer;
+        stroke: black;
+        stroke-width: 1px;
+      }
+
+      .legend-label {
+        font-size: 0.5em;
+      }
+
+      #president-info {
+        height: 400px;
+        background-color: aliceblue;
+      }
+
+      .president-info-container {
+        background-color: white;
+        position: absolute;
+        top: 400px;
+        left: 220px;
+        height: 300px;
+        width: 800px;
+        margin: auto;
+        box-shadow: 0 4px 12px 0px rgba(0, 0, 0, 0.25);
+        display: none;
+      }
+
+      .forward-step {
+        display: inline-block;
+        position: absolute;
+        top: 145px;
+        right: 50px;
+        cursor: pointer;
+      }
+      .back-step {
+        display: inline-block;
+        position: absolute;
+        top: 145px;
+        left: 45px;
+        cursor: pointer;
+      }
+
+      .president-image {
+        position: absolute;
+        top: 40px;
+        right: 100px;
+        width: 100px;
+      }
+
+      .flag {
+        width: 30px;
+      }
+
+      .president-info-title {
+        font-weight: bold;
+        font-size: 1.4em;
+        padding: 40px;
+        padding-bottom: 0px;
+        padding-left: 100px;
+      }
+
+      .president-info-lifespan {
+        font-weight: bold;
+        font-size: 1em;
+        padding: 5px;
+        padding-top: 0px;
+        padding-left: 100px;
+      }
+
+      .pi-item {
+        padding-left: 100px;
+        font-size: 0.8em;
+      }
+
+      .flag-container {
+        position: absolute;
+        top: 200px;
+        right: 100px;
+        width: 100px;
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body onload="onLoad()">
+    <div class="drop-container">
+      <div class="dropdown-option">
+        <button class="dropbtn"><i class="arrow down"></i> Select ??</button>
+        <div class="dropdown-content" id="option-selector"></div>
+      </div>
+    </div>
+    <div id="timeline-container"></div>
+    <div class="president-info-container">
+      <div class="back-step"><</div>
+      <div class="president-info">
+        <div class="president-info-title">Bashar al-Assad</div>
+        <div class="president-info-lifespan">(1965–)</div>
+        <div class="pi-item president-info-political-party">
+          Political Party: Syrian Ba'ath Party(Syria Region)
+        </div>
+        <div class="pi-item president-info-time">
+          Time in Office: 19 years, 233 days
+        </div>
+        <div class="pi-item president-info-city">
+          City of Birth: -
+        </div>
+        <div class="pi-item president-info-education">
+          Education: -
+        </div>
+        <div class="pi-item president-info-how-left">
+          He left by -
+        </div>
+
+        <img
+          class="president-image"
+          src="https://upload.wikimedia.org/wikipedia/commons/4/4f/Bashar_al-Assad.jpg"
+        />
+        <div class="flag-container">
+          <img
+            class="flag flag-0"
+            src="assets/flags/Flag_of_Syria_1958-1961_1980-2012.png"
+          />
+          <img
+            class="flag flag-1"
+            src="assets/flags/Flag_of_Syria_French_Mandate.png"
+          />
+        </div>
+      </div>
+      <div class="forward-step">></div>
+    </div>
+    <!-- load the d3.js library -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <script>
+      // set global parameters:
+      var transitionDuration = 1000;
+      var xScale, legend, GlobalIndex;
+      var initialWidth = 1400;
+      var initalHeight = 400;
+      var margin = { top: 30, right: 180, bottom: 100, left: 180 };
+      function onLoad() {
+        //var url = "Assad family.xlsx";
+        var url = "president_data.xlsx";
+        var oReq = new XMLHttpRequest();
+        oReq.open("GET", url, true);
+        oReq.responseType = "arraybuffer";
+
+        oReq.onload = function(e) {
+          var arraybuffer = oReq.response;
+
+          /* convert data to binary string */
+          var data = new Uint8Array(arraybuffer);
+          var arr = new Array();
+          for (var i = 0; i != data.length; ++i)
+            arr[i] = String.fromCharCode(data[i]);
+          var bstr = arr.join("");
+
+          /* Call XLSX */
+          var workbook = XLSX.read(bstr, {
+            type: "binary"
+          });
+
+          /* DO SOMETHING WITH workbook HERE */
+          var first_sheet_name = workbook.SheetNames[0];
+          /* Get worksheet */
+          var worksheet = workbook.Sheets[first_sheet_name];
+          var arrNew = XLSX.utils.sheet_to_json(worksheet, {
+            raw: true
+          });
+
+          // Process Data:
+          arrNew.forEach(function(v) {
+            v["left_office"] = formatDate(fixDate(v["left_office"]));
+            v["took_office"] = formatDate(fixDate(v["took_office"]));
+          });
+
+          var minYear = new Date(
+            d3.min(arrNew, function(d) {
+              return d["took_office"];
+            })
+          );
+
+          var maxYear = new Date();
+
+          var presidents = d3
+            .nest()
+            .key(function(d) {
+              return d["name"];
+            })
+            .entries(arrNew);
+
+          var politicalParties = d3
+            .nest()
+            .key(function(d) {
+              return d["color"];
+            })
+            .key(function(d) {
+              return d["political_party"];
+            })
+            .entries(arrNew)
+            .slice(1);
+
+          console.log(politicalParties);
+
+          presidentsList = presidents.map(function(d) {
+            return d.key;
+          });
+
+          presidentsIndices = presidents.map(function(d, i) {
+            return i;
+          });
+
+          console.log(arrNew);
+
+          //write function to produce drop down.
+
+          init_timeline();
+          //update_timeline("Political Parties");
+
+          optionsList = ["Political Parties"];
+
+          var optionSelector = d3
+            .select("#option-selector")
+            .selectAll("a")
+            .data(optionsList)
+            .enter()
+            .append("text")
+            .html(function(d) {
+              return "<a href='#'>" + d + "</a>";
+            })
+            .on("click", function(d) {
+              update_timeline(d);
+            });
+
+          d3.select(".back-step").on("click", function() {
+            console.log("GlobalIndex", GlobalIndex);
+            if (GlobalIndex > 0) {
+              show_president_info(GlobalIndex - 1);
+            }
+          });
+          d3.select(".forward-step").on("click", function() {
+            console.log("GlobalIndex", GlobalIndex);
+            if (GlobalIndex < arrNew.length - 1) {
+              show_president_info(GlobalIndex + 1);
+            }
+          });
+          //write function to produce timeline.
+          function init_timeline() {
+            function responsivefy(svg) {
+              // get container + svg aspect ratio
+              var container = d3.select(svg.node().parentNode),
+                width = parseInt(svg.style("width")),
+                height = parseInt(svg.style("height")),
+                aspect = width / height;
+
+              // add viewBox and preserveAspectRatio properties,
+              // and call resize so that svg resizes on inital page load
+              svg
+                .attr("viewBox", "0 0 " + width + " " + height)
+                .attr("perserveAspectRatio", "xMinYMid")
+                .call(resize);
+
+              // to register multiple listeners for same event type,
+              // you need to add namespace, i.e., 'click.foo'
+              // necessary if you call invoke this function for multiple svgs
+              // api docs: https://github.com/mbostock/d3/wiki/Selections#on
+              d3.select(window).on("resize." + container.attr("id"), resize);
+
+              // get width of container and resize svg to fit it
+              function resize() {
+                targetWidth = parseInt(container.style("width"));
+                svg.attr("width", targetWidth);
+                svg.attr("height", Math.round(targetWidth / aspect));
+              }
+            }
+            var w = window.innerWidth;
+
+            svg = d3
+              .select("#timeline-container")
+              .append("svg")
+              .attr("width", initialWidth)
+              .attr("height", initalHeight);
+
+            if (w < 600) {
+              mobileMode = 1;
+            }
+
+            svg.call(responsivefy);
+
+            chart = svg
+              .append("g")
+              .attr(
+                "transform",
+                "translate(" + margin.left + "," + margin.top + ")"
+              );
+
+            xScale = d3
+              .scaleTime()
+              .domain([new Date(minYear), new Date(maxYear)])
+              .range([margin.left, initialWidth - margin.right - margin.left]);
+
+            var yScale = d3
+              .scaleBand()
+              .domain(presidentsList)
+              .range([margin.top, initalHeight - margin.bottom - margin.top]);
+
+            svg
+              .append("g")
+              .attr("class", "x-axis-0")
+              .call(
+                d3
+                  .axisBottom(xScale)
+                  .tickFormat(d3.timeFormat("%Y"))
+                  .tickValues(
+                    xScale
+                      .ticks(15)
+                      .slice(0, -1)
+                      .concat(xScale.domain())
+                  )
+              )
+              .attr(
+                "transform",
+                "translate(" +
+                  0 +
+                  "," +
+                  (initalHeight - margin.bottom - margin.top) +
+                  ")"
+              );
+
+            svg
+              .selectAll(".president-block")
+              .data(arrNew)
+              .enter()
+              .append("rect")
+              .attr("class", "president-block")
+              .attr("x", function(d) {
+                return xScale(new Date(d["took_office"]));
+              })
+              .attr("y", function(d) {
+                return yScale(d.name);
+              })
+              .attr("height", function() {
+                return (
+                  (yScale.range()[1] - yScale.range()[0]) /
+                  presidentsList.length
+                );
+              })
+              .attr("width", 0)
+              .attr("fill", "white")
+              .on("click", function(d, i) {
+                console.log(d, i);
+                show_president_info(i);
+              });
+
+            // move these to top:
+
+            // end of function.
+          }
+
+          function show_president_info(index) {
+            GlobalIndex = index;
+            d3.select(".president-info-container").style("display", "block");
+            console.log("index", index);
+
+            var currentData = arrNew[index];
+            console.log("currentData", currentData);
+            d3.select(".president-info-title").text(currentData.name);
+            d3.select(".president-info-lifespan").text(currentData.lifespan);
+            d3.select(".president-info-political-party").text(
+              "Political Party: " + currentData["political_party"]
+            );
+            d3.select(".president-info-time").text(
+              "Time in Office: " + currentData["time_in_office"]
+            );
+            d3.select(".president-info-city").text(
+              "City of Birth: " + currentData["City_of_Birth"]
+            );
+            d3.selectAll(".president-block").attr("opacity", function(d, i) {
+              if (i === index) {
+                return 1;
+              } else {
+                return 0.5;
+              }
+            });
+          }
+
+          // to delete later
+          function fixDate(entry) {
+            if (entry) {
+              entries = entry.split("---");
+              return entries[1] + "-" + entries[0] + "-" + entries[2];
+            } else {
+              return new Date();
+            }
+          }
+
+          function formatDate(entry) {
+            var entryDate = new Date(entry);
+            if (entryDate.getMonth() + 1 < 10) {
+              var entryMonth = "0" + (entryDate.getMonth() + 1);
+            } else {
+              var entryMonth = entryDate.getMonth() + 1;
+            }
+
+            if (entryDate.getUTCDate() < 10) {
+              var entryDay = "0" + entryDate.getUTCDate();
+            } else {
+              var entryDay = entryDate.getUTCDate();
+            }
+
+            return (
+              entryDate.getUTCFullYear() + "-" + entryMonth + "-" + entryDay
+            );
+          }
+
+          function update_timeline(type) {
+            if (type === "Political Parties") {
+              d3.selectAll(".president-block")
+                .transition()
+                .duration(transitionDuration)
+                .attr("width", function(d) {
+                  var start = xScale(new Date(d["took_office"]));
+                  var end = xScale(new Date(d["left_office"]));
+                  return end - start;
+                })
+                .attr("fill", function(d) {
+                  if (d.color) {
+                    return d.color;
+                  } else {
+                    return "white";
+                  }
+                });
+
+              var legendRectSize = 12;
+              var legendSpacing =
+                (initialWidth - margin.left - margin.right) /
+                (politicalParties.length + 2);
+
+              console.log(legendSpacing);
+
+              legend = d3
+                .select("#timeline-container")
+                .select("svg")
+                .selectAll(".legend")
+                .data(politicalParties)
+                .enter()
+                .append("g")
+                .attr("class", "legend")
+                .attr("transform", function(d, i) {
+                  var height = legendRectSize + legendSpacing;
+                  var offset = margin.left;
+                  var horz = i * height + offset;
+                  var vert = 300;
+                  return "translate(" + horz + "," + vert + ")";
+                });
+
+              legend
+                .append("rect")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", legendRectSize)
+                .attr("height", legendRectSize)
+                .style("stroke", "black")
+                .style("stroke-width", 1)
+                .attr("fill", function(d) {
+                  return d.key;
+                });
+
+              legend
+                .append("text")
+                .attr("class", "legend-label")
+                .attr("dx", legendRectSize + 3)
+                .attr("dy", "1em")
+                .text(function(d) {
+                  return d.values[0].values[0]["political_party"];
+                });
+            }
+            show_president_info(arrNew.length - 1);
+          }
+          //write function to show president.
+        };
+
+        oReq.send();
+      }
+    </script>
+  </body>
+</html>
