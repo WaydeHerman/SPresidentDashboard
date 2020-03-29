@@ -6,30 +6,32 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1"
     />
-    <link
-      rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-    />
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js"></script>
     <title>Dashboard</title>
 
     <style>
+      body {
+        font-family: Avenir;
+      }
       /* Dropdown Button */
       .drop-container {
+        text-align: center;
       }
       .dropbtn {
-        background-color: #787878;
-        color: white;
+        background-color: #f4eddc;
+        color: black;
         padding: 10px;
-        font-weight: bold;
-        font-size: 10px;
+        font-size: 14px;
         border: none;
         cursor: pointer;
-        min-width: 120px;
+        min-width: 200px;
         text-anchor: middle;
+      }
+
+      .dropdown-icon {
+        margin-left: 10px;
       }
 
       /* The container <div> - needed to position the dropdown content */
@@ -43,24 +45,30 @@
       .dropdown-content {
         display: none;
         position: absolute;
-        background-color: #f1f1f1;
-        min-width: 120px;
+        left: 0;
+        right: 0;
+        margin: auto;
         z-index: 1;
         max-height: 530px;
         overflow: auto;
         text-anchor: middle;
+        text-align: center;
       }
 
       /* Links inside the dropdown */
       .dropdown-content a {
-        color: #404e4d;
-        font-size: 10px;
-        font-weight: bold;
+        background-color: #f2f2f2;
+        max-width: 200px;
+        color: black;
+        font-size: 14px;
         padding: 8px 0px;
         text-decoration: none;
         display: block;
         text-anchor: middle;
         text-align: center;
+        left: 0;
+        right: 0;
+        margin: auto;
       }
 
       /* Change color of dropdown links on hover */
@@ -75,17 +83,26 @@
 
       /* Change the background color of the dropdown button when the dropdown content is shown */
       .dropdown-option:hover .dropbtn {
-        background-color: #132a54;
+        background-color: #ded8c8;
       }
 
       .president-block {
         cursor: pointer;
         stroke: black;
-        stroke-width: 1px;
+        stroke-width: 0px;
+      }
+
+      .president-block-label {
+        font-size: 0.6em;
       }
 
       .legend-label {
-        font-size: 0.5em;
+        font-size: 0.6em;
+      }
+
+      .legend-label-header {
+        font-size: 0.8em;
+        font-weight: bold;
       }
 
       #president-info {
@@ -101,7 +118,7 @@
         height: 300px;
         width: 800px;
         margin: auto;
-        box-shadow: 0 4px 12px 0px rgba(0, 0, 0, 0.25);
+        border: 2px solid black;
         display: none;
       }
 
@@ -120,13 +137,6 @@
         cursor: pointer;
       }
 
-      .president-image {
-        position: absolute;
-        top: 40px;
-        right: 100px;
-        width: 100px;
-      }
-
       .flag {
         width: 30px;
       }
@@ -139,7 +149,7 @@
         padding-left: 100px;
       }
 
-      .president-info-lifespan {
+      .president-info-period {
         font-weight: bold;
         font-size: 1em;
         padding: 5px;
@@ -159,65 +169,73 @@
         width: 100px;
         text-align: center;
       }
+
+      .bold {
+        font-weight: bold;
+      }
+
+      .step-btn {
+        cursor: pointer;
+      }
     </style>
   </head>
 
   <body onload="onLoad()">
     <div class="drop-container">
       <div class="dropdown-option">
-        <button class="dropbtn"><i class="arrow down"></i> Select ??</button>
+        <button class="dropbtn">
+          <i class="arrow down"></i> Select Color Category
+          <img
+            class="dropdown-icon"
+            src="assets/icons/chevron-down-solid.svg"
+            width="10"
+          />
+        </button>
         <div class="dropdown-content" id="option-selector"></div>
       </div>
     </div>
     <div id="timeline-container"></div>
-    <div class="president-info-container">
-      <div class="back-step"><</div>
-      <div class="president-info">
-        <div class="president-info-title">Bashar al-Assad</div>
-        <div class="president-info-lifespan">(1965–)</div>
-        <div class="pi-item president-info-political-party">
-          Political Party: Syrian Ba'ath Party(Syria Region)
-        </div>
-        <div class="pi-item president-info-time">
-          Time in Office: 19 years, 233 days
-        </div>
-        <div class="pi-item president-info-city">
-          City of Birth: -
-        </div>
-        <div class="pi-item president-info-education">
-          Education: -
-        </div>
-        <div class="pi-item president-info-how-left">
-          He left by -
-        </div>
 
-        <img
-          class="president-image"
-          src="https://upload.wikimedia.org/wikipedia/commons/4/4f/Bashar_al-Assad.jpg"
-        />
-        <div class="flag-container">
-          <img
-            class="flag flag-0"
-            src="assets/flags/Flag_of_Syria_1958-1961_1980-2012.png"
-          />
-          <img
-            class="flag flag-1"
-            src="assets/flags/Flag_of_Syria_French_Mandate.png"
-          />
-        </div>
-      </div>
-      <div class="forward-step">></div>
-    </div>
     <!-- load the d3.js library -->
     <script src="https://d3js.org/d3.v5.min.js"></script>
 
     <script>
       // set global parameters:
+      var legend, legendTitle, GlobalType, colorScale;
       var transitionDuration = 1000;
       var xScale, legend, GlobalIndex;
       var initialWidth = 1400;
-      var initalHeight = 400;
-      var margin = { top: 30, right: 180, bottom: 100, left: 180 };
+      var initialHeight = 800;
+      var marginTL = { top: 10, right: 180, bottom: 500, left: 180 };
+      var marginPV = { top: 120, right: 150, bottom: 20, left: 150 };
+      var colors = {
+        "Political Party": [
+          "#EFBB22",
+          "#473144",
+          "#086788",
+          "#000000",
+          "#07A0C3",
+          "#3C0919",
+          "#00592D",
+          "#136F63",
+          "#8EA604",
+          "#F56416",
+          "#CE1126",
+          "#007A3D"
+        ],
+        "Country Name": ["#EFBB22", "#086788", "#8EA604", "#CE1126", "#007A3D"],
+        "Governate of Birth": [
+          "#EFBB22",
+          "#473144",
+          "#086788",
+          "#07A0C3",
+          "#136F63",
+          "#8EA604",
+          "#F56416",
+          "#CE1126",
+          "#007A3D"
+        ]
+      };
       function onLoad() {
         //var url = "Assad family.xlsx";
         var url = "president_data.xlsx";
@@ -272,13 +290,24 @@
           var politicalParties = d3
             .nest()
             .key(function(d) {
-              return d["color"];
-            })
-            .key(function(d) {
               return d["political_party"];
             })
-            .entries(arrNew)
-            .slice(1);
+            .entries(arrNew);
+          //.slice(1);
+
+          var governates = d3
+            .nest()
+            .key(function(d) {
+              return d["Governate"];
+            })
+            .entries(arrNew);
+
+          var countryName = d3
+            .nest()
+            .key(function(d) {
+              return d["country_name"];
+            })
+            .entries(arrNew);
 
           console.log(politicalParties);
 
@@ -297,7 +326,12 @@
           init_timeline();
           //update_timeline("Political Parties");
 
-          optionsList = ["Political Parties"];
+          optionsList = [
+            "Political Party",
+            "Country Name",
+            "Gender",
+            "Governate of Birth"
+          ];
 
           var optionSelector = d3
             .select("#option-selector")
@@ -312,13 +346,13 @@
               update_timeline(d);
             });
 
-          d3.select(".back-step").on("click", function() {
+          d3.select(".step-btn-0").on("click", function() {
             console.log("GlobalIndex", GlobalIndex);
             if (GlobalIndex > 0) {
               show_president_info(GlobalIndex - 1);
             }
           });
-          d3.select(".forward-step").on("click", function() {
+          d3.select(".step-btn-1").on("click", function() {
             console.log("GlobalIndex", GlobalIndex);
             if (GlobalIndex < arrNew.length - 1) {
               show_president_info(GlobalIndex + 1);
@@ -359,7 +393,7 @@
               .select("#timeline-container")
               .append("svg")
               .attr("width", initialWidth)
-              .attr("height", initalHeight);
+              .attr("height", initialHeight);
 
             if (w < 600) {
               mobileMode = 1;
@@ -371,18 +405,21 @@
               .append("g")
               .attr(
                 "transform",
-                "translate(" + margin.left + "," + margin.top + ")"
+                "translate(" + marginTL.left + "," + marginTL.top + ")"
               );
 
             xScale = d3
               .scaleTime()
               .domain([new Date(minYear), new Date(maxYear)])
-              .range([margin.left, initialWidth - margin.right - margin.left]);
+              .range([marginTL.left, initialWidth - marginTL.right]);
 
             var yScale = d3
               .scaleBand()
               .domain(presidentsList)
-              .range([margin.top, initalHeight - margin.bottom - margin.top]);
+              .range([
+                marginTL.top,
+                initialHeight - marginTL.bottom - marginTL.top
+              ]);
 
             svg
               .append("g")
@@ -403,9 +440,10 @@
                 "translate(" +
                   0 +
                   "," +
-                  (initalHeight - margin.bottom - margin.top) +
+                  (initialHeight - marginTL.bottom - marginTL.top) +
                   ")"
-              );
+              )
+              .attr("opacity", 0);
 
             svg
               .selectAll(".president-block")
@@ -432,35 +470,304 @@
                 show_president_info(i);
               });
 
+            svg
+              .selectAll(".president-block-label")
+              .data(presidents)
+              .enter()
+              .append("text")
+              .attr("class", "president-block-label")
+              .attr("x", function(d) {
+                return (
+                  xScale(
+                    new Date(d.values[d.values.length - 1]["left_office"])
+                  ) + 5
+                );
+              })
+              .attr("y", function(d) {
+                return yScale(d.key) + 7;
+              })
+              .text(function(d) {
+                return d.key;
+              })
+              .attr("opacity", 0);
+
+            console.log(presidents);
+
             // move these to top:
+            presidentChart = svg
+              .append("g")
+              .attr(
+                "transform",
+                "translate(" +
+                  marginTL.left +
+                  "," +
+                  (initialHeight - marginTL.bottom) +
+                  ")"
+              )
+              .style("display", "none");
+
+            var arrowPadding = 40;
+
+            presidentChart
+              .append("rect")
+              .attr("x", 0)
+              .attr("y", 20)
+              .attr("width", initialWidth - marginTL.left - marginTL.right)
+              .attr("height", marginTL.bottom - 120)
+
+              .style("stroke", "black")
+              .style("stroke-width", "2px")
+              .attr("fill", "none");
+
+            presidentChart
+              .append("rect")
+              .attr("x", 0)
+              .attr("y", 20)
+              .attr("width", initialWidth - marginTL.left - marginTL.right)
+              .attr("height", 20)
+              .attr("class", "president-color")
+              .style("stroke", "black")
+              .style("stroke-width", "2px")
+              .attr("fill", "none");
+
+            presidentChart
+              .append("image")
+              .attr("xlink:href", "assets/icons/chevron-left-solid.svg")
+              .attr("class", "step-btn step-btn-0")
+              .attr("x", arrowPadding)
+              .attr("y", (marginTL.bottom - 100) / 2)
+              .attr("width", 20);
+
+            presidentChart
+              .append("image")
+              .attr("xlink:href", "assets/icons/chevron-right-solid.svg")
+              .attr("class", "step-btn step-btn-1")
+              .attr(
+                "x",
+                initialWidth -
+                  marginTL.right -
+                  marginTL.left -
+                  arrowPadding -
+                  20
+              )
+              .attr("y", (marginTL.bottom - 100) / 2)
+              .attr("width", 20);
+
+            presidentChart
+              .append("text")
+              .text("Bashar al-Assad")
+              .attr("class", "president-info-title")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top);
+
+            presidentChart
+              .append("text")
+              .text("2000–Present (19 years, 233 days)")
+              .attr("class", "president-info-period")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 20);
+
+            presidentChart
+              .append("text")
+              .text("Political Party: Syrian Ba'ath Party(Syria Region)")
+              .attr("class", "president-info-political-party")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 60);
+
+            presidentChart
+              .append("text")
+              .text("Lifespan: 1965–Present")
+              .attr("class", "president-info-lifespan")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 80);
+
+            presidentChart
+              .append("text")
+              .text("Governate of Birth: Damascus")
+              .attr("class", "president-info-governate")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 100);
+
+            presidentChart
+              .append("text")
+              .text("Place of Birth: Damascus, Damascus Governorate, Syria")
+              .attr("class", "president-info-place")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 120);
+
+            presidentChart
+              .append("text")
+              .text("Education: -")
+              .attr("class", "president-info-education")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 140);
+
+            presidentChart
+              .append("text")
+              .text("Religion: -")
+              .attr("class", "president-info-religion")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 160);
+
+            presidentChart
+              .append("text")
+              .text("Ascension to Power: -")
+              .attr("class", "president-info-ascension")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 180);
+
+            presidentChart
+              .append("text")
+              .text("He left by -")
+              .attr("class", "president-info-how-left")
+              .attr("x", marginPV.left)
+              .attr("y", marginPV.top + 200);
+
+            presidentChart
+              .append("image")
+              .attr("xlink:href", "assets/images/Bashar_al-Assad.jpg")
+              .attr("class", "president-image")
+              .attr(
+                "x",
+                initialWidth -
+                  marginTL.right -
+                  marginTL.left -
+                  marginPV.right -
+                  100
+              )
+              .attr("y", marginPV.top)
+              .attr("width", 140);
 
             // end of function.
           }
 
           function show_president_info(index) {
             GlobalIndex = index;
-            d3.select(".president-info-container").style("display", "block");
+            if (GlobalIndex === arrNew.length - 1) {
+              d3.select(".step-btn-1")
+                .style("cursor", "default")
+                .style("opacity", 0.3);
+            } else {
+              d3.select(".step-btn-1")
+                .style("cursor", "pointer")
+                .style("opacity", 1);
+            }
+            if (GlobalIndex === 0) {
+              d3.select(".step-btn-0")
+                .style("cursor", "default")
+                .style("opacity", 0.3);
+            } else {
+              d3.select(".step-btn-0")
+                .style("cursor", "pointer")
+                .style("opacity", 1);
+            }
+            d3.selectAll(".president-flag").remove();
+            d3.select(".president-info-container").style("display", "none");
             console.log("index", index);
 
             var currentData = arrNew[index];
             console.log("currentData", currentData);
+            d3.select(".president-color").attr("fill", function() {
+              if (GlobalType === "Political Party") {
+                return colorScale(currentData.political_party);
+              }
+              if (GlobalType === "Country Name") {
+                return colorScale(currentData.country_name);
+              }
+              if (GlobalType === "Governate of Birth") {
+                return colorScale(currentData.Governate);
+              }
+              if (GlobalType === "Gender") {
+                return "#CE1125";
+              }
+            });
             d3.select(".president-info-title").text(currentData.name);
-            d3.select(".president-info-lifespan").text(currentData.lifespan);
+            d3.select(".president-info-period").text(
+              currentData.took_office.slice(0, 4) +
+                "-" +
+                currentData.left_office.slice(0, 4) +
+                " (" +
+                currentData["time_in_office"] +
+                ")"
+            );
+
             d3.select(".president-info-political-party").text(
               "Political Party: " + currentData["political_party"]
             );
-            d3.select(".president-info-time").text(
-              "Time in Office: " + currentData["time_in_office"]
+            d3.select(".president-info-lifespan").text(
+              "Lifespan: " + currentData.lifespan
             );
-            d3.select(".president-info-city").text(
-              "City of Birth: " + currentData["City_of_Birth"]
+            d3.select(".president-info-governate").text(
+              "Governate: " + currentData["Governate"]
             );
-            d3.selectAll(".president-block").attr("opacity", function(d, i) {
-              if (i === index) {
-                return 1;
+            d3.select(".president-info-place").text(
+              "Place of Birth: " + currentData["City_of_Birth"]
+            );
+
+            d3.select(".president-image").attr("xlink:href", function() {
+              if (currentData.img) {
+                return "assets/images/" + currentData.img;
               } else {
-                return 0.5;
+                return "assets/images/none.png";
               }
+            });
+
+            for (let i = 0; i <= 3; i++) {
+              var length = currentData.Flag.split(",").length;
+              if (i >= length) {
+                d3.select(".flag-" + i).style("display", "none");
+              } else {
+                d3.select(".flag-" + i)
+                  .style("display", "")
+                  .attr(
+                    "src",
+                    "assets/flags/" + currentData.Flag.split(",")[i]
+                  );
+              }
+            }
+
+            d3.selectAll(".president-block")
+              .attr("opacity", function(d, i) {
+                if (i === index) {
+                  return 1;
+                } else {
+                  return 0.5;
+                }
+              })
+              .style("stroke-width", function(d, i) {
+                if (i === index) {
+                  return 1;
+                } else {
+                  return 0;
+                }
+              });
+            d3.selectAll(".president-block-label").attr("class", function(
+              d,
+              i
+            ) {
+              if (d.key === currentData.name) {
+                return "president-block-label bold";
+              } else {
+                return "president-block-label";
+              }
+            });
+
+            currentData.Flag.split(",").forEach(function(v, i) {
+              presidentChart
+                .append("image")
+                .attr("xlink:href", "assets/flags/" + v)
+                .attr("class", "president-flag")
+                .attr(
+                  "x",
+                  initialWidth -
+                    marginTL.right -
+                    marginTL.left -
+                    marginPV.right -
+                    460 +
+                    i * 50
+                )
+                .attr("y", marginPV.top - 20)
+                .attr("width", 40);
             });
           }
 
@@ -494,7 +801,34 @@
           }
 
           function update_timeline(type) {
-            if (type === "Political Parties") {
+            GlobalType = type;
+            presidentChart.style("display", "");
+            d3.select(".x-axis-0")
+              .transition()
+              .duration(transitionDuration)
+              .attr("opacity", 1);
+            if (legend) {
+              legend.remove();
+              legendTitle.remove();
+            }
+            if (type === "Political Party") {
+              presidentChart.attr(
+                "transform",
+                "translate(" +
+                  marginTL.left +
+                  "," +
+                  (initialHeight - marginTL.bottom + 80) +
+                  ")"
+              );
+              colorScale = d3
+                .scaleOrdinal()
+                .domain(
+                  politicalParties.map(function(d) {
+                    return d.key;
+                  })
+                )
+                .range(colors[type]);
+
               d3.selectAll(".president-block")
                 .transition()
                 .duration(transitionDuration)
@@ -504,19 +838,26 @@
                   return end - start;
                 })
                 .attr("fill", function(d) {
-                  if (d.color) {
-                    return d.color;
-                  } else {
-                    return "white";
-                  }
+                  return colorScale(d["political_party"]);
                 });
 
-              var legendRectSize = 12;
-              var legendSpacing =
-                (initialWidth - margin.left - margin.right) /
-                (politicalParties.length + 2);
+              d3.selectAll(".president-block-label")
+                .transition()
+                .duration(transitionDuration / 2)
+                .delay(transitionDuration / 2)
+                .attr("opacity", 1);
 
-              console.log(legendSpacing);
+              legendTitle = d3
+                .select("#timeline-container")
+                .select("svg")
+                .append("text")
+                .attr("class", "legend-label-header")
+                .text("Political Party:")
+                .attr("y", 330)
+                .attr("x", marginTL.left);
+
+              var legendRectSize = 12;
+              var legendSpacing = 165;
 
               legend = d3
                 .select("#timeline-container")
@@ -528,9 +869,13 @@
                 .attr("class", "legend")
                 .attr("transform", function(d, i) {
                   var height = legendRectSize + legendSpacing;
-                  var offset = margin.left;
+                  var offset = marginTL.left;
                   var horz = i * height + offset;
-                  var vert = 300;
+                  var vert = 340;
+                  if (i > 5) {
+                    vert = 360;
+                    horz = (i - 6) * height + offset;
+                  }
                   return "translate(" + horz + "," + vert + ")";
                 });
 
@@ -543,18 +888,270 @@
                 .style("stroke", "black")
                 .style("stroke-width", 1)
                 .attr("fill", function(d) {
-                  return d.key;
+                  return colorScale(d.key);
                 });
 
               legend
                 .append("text")
                 .attr("class", "legend-label")
-                .attr("dx", legendRectSize + 3)
+                .attr("dx", legendRectSize + 7)
                 .attr("dy", "1em")
                 .text(function(d) {
-                  return d.values[0].values[0]["political_party"];
+                  return d.key;
                 });
             }
+            if (type === "Country Name") {
+              presidentChart.attr(
+                "transform",
+                "translate(" +
+                  marginTL.left +
+                  "," +
+                  (initialHeight - marginTL.bottom + 60) +
+                  ")"
+              );
+              colorScale = d3
+                .scaleOrdinal()
+                .domain(
+                  countryName.map(function(d) {
+                    return d.key;
+                  })
+                )
+                .range(colors[type]);
+
+              d3.selectAll(".president-block")
+                .transition()
+                .duration(transitionDuration)
+                .attr("width", function(d) {
+                  var start = xScale(new Date(d["took_office"]));
+                  var end = xScale(new Date(d["left_office"]));
+                  return end - start;
+                })
+                .attr("fill", function(d) {
+                  return colorScale(d["country_name"]);
+                });
+
+              d3.selectAll(".president-block-label")
+                .transition()
+                .duration(transitionDuration / 2)
+                .delay(transitionDuration / 2)
+                .attr("opacity", 1);
+
+              legendTitle = d3
+                .select("#timeline-container")
+                .select("svg")
+                .append("text")
+                .attr("class", "legend-label-header")
+                .text("Country Name:")
+                .attr("y", 330)
+                .attr("x", marginTL.left);
+
+              var legendRectSize = 12;
+              var legendSpacing = 220;
+
+              legend = d3
+                .select("#timeline-container")
+                .select("svg")
+                .selectAll(".legend")
+                .data(countryName)
+                .enter()
+                .append("g")
+                .attr("class", "legend")
+                .attr("transform", function(d, i) {
+                  var height = legendRectSize + legendSpacing;
+                  var offset = marginTL.left;
+                  var horz = i * height + offset;
+                  var vert = 340;
+                  return "translate(" + horz + "," + vert + ")";
+                });
+
+              legend
+                .append("rect")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", legendRectSize)
+                .attr("height", legendRectSize)
+                .style("stroke", "black")
+                .style("stroke-width", 1)
+                .attr("fill", function(d) {
+                  return colorScale(d.key);
+                });
+
+              legend
+                .append("text")
+                .attr("class", "legend-label")
+                .attr("dx", legendRectSize + 7)
+                .attr("dy", "1em")
+                .text(function(d) {
+                  return d.key;
+                });
+            }
+            if (type === "Governate of Birth") {
+              presidentChart.attr(
+                "transform",
+                "translate(" +
+                  marginTL.left +
+                  "," +
+                  (initialHeight - marginTL.bottom + 80) +
+                  ")"
+              );
+              colorScale = d3
+                .scaleOrdinal()
+                .domain(
+                  governates.map(function(d) {
+                    return d.key;
+                  })
+                )
+                .range(colors[type]);
+
+              d3.selectAll(".president-block")
+                .transition()
+                .duration(transitionDuration)
+                .attr("width", function(d) {
+                  var start = xScale(new Date(d["took_office"]));
+                  var end = xScale(new Date(d["left_office"]));
+                  return end - start;
+                })
+                .attr("fill", function(d) {
+                  return colorScale(d["Governate"]);
+                });
+
+              d3.selectAll(".president-block-label")
+                .transition()
+                .duration(transitionDuration / 2)
+                .delay(transitionDuration / 2)
+                .attr("opacity", 1);
+
+              legendTitle = d3
+                .select("#timeline-container")
+                .select("svg")
+                .append("text")
+                .attr("class", "legend-label-header")
+                .text("Governates of Birth:")
+                .attr("y", 330)
+                .attr("x", marginTL.left);
+
+              var legendRectSize = 12;
+              var legendSpacing = 165;
+
+              legend = d3
+                .select("#timeline-container")
+                .select("svg")
+                .selectAll(".legend")
+                .data(governates)
+                .enter()
+                .append("g")
+                .attr("class", "legend")
+                .attr("transform", function(d, i) {
+                  var height = legendRectSize + legendSpacing;
+                  var offset = marginTL.left;
+                  var horz = i * height + offset;
+                  var vert = 340;
+                  if (i > 5) {
+                    vert = 360;
+                    horz = (i - 6) * height + offset;
+                  }
+                  return "translate(" + horz + "," + vert + ")";
+                });
+
+              legend
+                .append("rect")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", legendRectSize)
+                .attr("height", legendRectSize)
+                .style("stroke", "black")
+                .style("stroke-width", 1)
+                .attr("fill", function(d) {
+                  return colorScale(d.key);
+                });
+
+              legend
+                .append("text")
+                .attr("class", "legend-label")
+                .attr("dx", legendRectSize + 7)
+                .attr("dy", "1em")
+                .text(function(d) {
+                  return d.key;
+                });
+            }
+            if (type === "Gender") {
+              presidentChart.attr(
+                "transform",
+                "translate(" +
+                  marginTL.left +
+                  "," +
+                  (initialHeight - marginTL.bottom + 60) +
+                  ")"
+              );
+
+              d3.selectAll(".president-block")
+                .transition()
+                .duration(transitionDuration)
+                .attr("width", function(d) {
+                  var start = xScale(new Date(d["took_office"]));
+                  var end = xScale(new Date(d["left_office"]));
+                  return end - start;
+                })
+                .attr("fill", function(d) {
+                  return "#CE1125";
+                });
+
+              d3.selectAll(".president-block-label")
+                .transition()
+                .duration(transitionDuration / 2)
+                .delay(transitionDuration / 2)
+                .attr("opacity", 1);
+
+              legendTitle = d3
+                .select("#timeline-container")
+                .select("svg")
+                .append("text")
+                .attr("class", "legend-label-header")
+                .text("Gender:")
+                .attr("y", 330)
+                .attr("x", marginTL.left);
+
+              var legendRectSize = 12;
+              var legendSpacing = 165;
+
+              legend = d3
+                .select("#timeline-container")
+                .select("svg")
+                .selectAll(".legend")
+                .data(["Male"])
+                .enter()
+                .append("g")
+                .attr("class", "legend")
+                .attr("transform", function(d, i) {
+                  var height = legendRectSize + legendSpacing;
+                  var offset = marginTL.left;
+                  var horz = i * height + offset;
+                  var vert = 340;
+                  return "translate(" + horz + "," + vert + ")";
+                });
+
+              legend
+                .append("rect")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", legendRectSize)
+                .attr("height", legendRectSize)
+                .style("stroke", "black")
+                .style("stroke-width", 1)
+                .attr("fill", function(d) {
+                  return "#CE1125";
+                });
+
+              legend
+                .append("text")
+                .attr("class", "legend-label")
+                .attr("dx", legendRectSize + 7)
+                .attr("dy", "1em")
+                .text(function(d) {
+                  return d;
+                });
+            }
+
             show_president_info(arrNew.length - 1);
           }
           //write function to show president.
